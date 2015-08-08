@@ -49,3 +49,6 @@ driver.findElement(webdriver.By.id('progress-meter')).then(function(webElement) 
     });
 
 driver.quit();
+
+//{"price":1}
+//{"_id":0}

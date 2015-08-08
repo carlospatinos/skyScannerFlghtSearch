@@ -2,7 +2,7 @@ var moment = require('moment');
 var log4js = require('log4js');
 var webdriver = require('selenium-webdriver');
 var monk = require('monk');
-var db = monk('localhost:27017/enmCapabilitiesResults');
+var db = monk('localhost:27017/collectionFromMongo');
 
 
 var logger = log4js.getLogger();
@@ -18,7 +18,8 @@ var infants = 1;
 
 
 // 5min * 60s * 1000ms = 300.000ms
-var TIMEOUT = 300000;
+// 3min = 180000
+var TIMEOUT = 180000;
 var BASE_URL = 'www.skyscanner.ie/transport/flights';
 
 // ----------------------------------
@@ -39,14 +40,14 @@ function main(from, to, adults, children, infants) {
         try{
             search(from, to, adults, children, infants, schedule);
         } catch( e ) {
-            console.error("Error searching: " + e);
+            logger.error("Error searching: " + e);
         }
     });
 }
 
 function search(from, to, adults, children, infants, schedule) {
     var urlToCheck = 'http://' + BASE_URL + '/' + from + '/' + to + '/' + schedule.departureDate.format('YYMMDD') + '/' + schedule.returnDate.format('YYMMDD') + '?adults=' + adults + '&children=' + children + '&infants=' + infants;
-    logger.debug(urlToCheck);
+    logger.debug(schedule.id + " >> " + urlToCheck);
     
     driver.get(urlToCheck);
     driver.findElement(webdriver.By.id('progress-meter')).then(function(webElement) {
@@ -78,8 +79,8 @@ function search(from, to, adults, children, infants, schedule) {
         if (prices[0] != undefined) {
             prices[0].getText().then(function (price) {
                 var now = moment();
-                var result = {numberOfDays: schedule.numberOfDays, departureDate: schedule.departureDate.format('DD/MM/YYYY'), returnDate: schedule.returnDate.format('DD/MM/YYYY'), price: price, url: urlToCheck, executionDate: now};
-                logger.info(result);
+                var result = {numberOfDays: schedule.numberOfDays, departureDate: schedule.departureDate.format('DD/MM/YYYY'), returnDate: schedule.returnDate.format('DD/MM/YYYY'), price: price, url: urlToCheck, executionDate: now.format('DD/MM/YYYY HH:mm')};
+                logger.info(schedule.id + " >> " + JSON.stringify(result));
                 var collection = db.get('skyScanner');
                 collection.insert(result);
              });
@@ -87,6 +88,7 @@ function search(from, to, adults, children, infants, schedule) {
             logger.info("No price found for: " + urlToCheck);
         }
     });
+    //driver.quit();
 }
 
 function FlightCalendar(minDepartureDate, maxReturnDate, minDuration, maxDuration) {
@@ -112,8 +114,9 @@ function FlightCalendar(minDepartureDate, maxReturnDate, minDuration, maxDuratio
                 }
                 siteId++;
                 //logger.debug("numberOfDaysToStay: " + numberOfDaysToStay + " >> From: " + startDateToTest.format('YYYY-MM-DD') + " To: " + endDateToTest.format('YYYY-MM-DD') );
-                logger.debug({id: siteId, departureDate: startDateToTest.format('YYYY-MM-DD'), returnDate: endDateToTest.format('YYYY-MM-DD'), numberOfDays: numberOfDaysToStay});
-                this.generatedDates.push({departureDate: startDateToTest.clone(), returnDate: endDateToTest.clone(), numberOfDays: numberOfDaysToStay});
+                var queryData = {id: siteId, departureDate: startDateToTest.format('YYYY-MM-DD'), returnDate: endDateToTest.format('YYYY-MM-DD'), numberOfDays: numberOfDaysToStay}
+                logger.debug(queryData);
+                this.generatedDates.push({id: siteId, departureDate: startDateToTest.clone(), returnDate: endDateToTest.clone(), numberOfDays: numberOfDaysToStay});
             }
         }
         
