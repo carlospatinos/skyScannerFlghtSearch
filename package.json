@@ -1,0 +1,12 @@
+{
+  "name": "SkyScannerSearchEngine",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "start": "node app.js"
+  },
+    "dependencies": {
+        "selenium-webdriver": "^2.46.0",
+        "moment" : "^2.10.3 "
+    }
+}
