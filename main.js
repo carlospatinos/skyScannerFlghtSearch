@@ -1,6 +1,9 @@
 var moment = require('moment');
 var log4js = require('log4js');
 var webdriver = require('selenium-webdriver');
+var monk = require('monk');
+var db = monk('localhost:27017/enmCapabilitiesResults');
+
 
 var logger = log4js.getLogger();
 logger.setLevel('TRACE');
@@ -74,7 +77,11 @@ function search(from, to, adults, children, infants, schedule) {
     // first price only
         if (prices[0] != undefined) {
             prices[0].getText().then(function (price) {
-                logger.info({numberOfDays: schedule.numberOfDays, departureDate: schedule.departureDate.format('DD/MM/YYYY'), returnDate: schedule.returnDate.format('DD/MM/YYYY'), price: price});
+                var now = moment();
+                var result = {numberOfDays: schedule.numberOfDays, departureDate: schedule.departureDate.format('DD/MM/YYYY'), returnDate: schedule.returnDate.format('DD/MM/YYYY'), price: price, url: urlToCheck, executionDate: now};
+                logger.info(result);
+                var collection = db.get('skyScanner');
+                collection.insert(result);
              });
         } else {
             logger.info("No price found for: " + urlToCheck);
