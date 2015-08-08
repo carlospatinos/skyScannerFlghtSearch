@@ -7,26 +7,38 @@ var BASE_URL = 'www.skyscanner.ie/transport/flights';
 
 // ----------------------------------
 
-var _begin = moment("2015-12-11");
-var _end = moment("2016-01-20"); // inclusive
+var _begin = moment("2015-12-15");
+var _end = moment("2015-12-19"); // inclusive
 var _from = 'dub';
 var _to = 'mex';
-var _trip_min = 21; // inclusive
-var _trip_max = 31; // inclusive
+var _trip_min = 2; // inclusive
+var _trip_max = 3; // inclusive
+var _adults = 2;
+var _children = 1;
+var _infants = 1;
 var bestPrice = 0;
 
 // ----------------------------------
-var By = webdriver.By;
-var until = webdriver.until;
-var driver = new webdriver.Builder().forBrowser('firefox').build();
+//var By = webdriver.By;
+//var until = webdriver.until;
+//var driver = new webdriver.Builder().forBrowser('firefox').build();
 var cal = new FightCalendar(_begin, _end);
 
+var currentDates = cal.nextDates();
 // ----------------------------------
-search();
+while (!cal.isDone()) {
+    currentDates = cal.nextDates()
+    console.log({depart: currentDates.depart.format('DD/MM/YYYY'), back: currentDates.back.format('DD/MM/YYYY')});
+}
+return;
+//driver.quit();
+
+
+
+
 // ----------------------------------
 
 function search() {
-
     var currentDates = cal.nextDates();
 
     if (cal.isDone()) {
@@ -34,7 +46,7 @@ function search() {
         return;
     }
 
-    driver.get('http://' + BASE_URL + '/' + _from + '/' + _to + '/' + currentDates.depart.format('YYMMDD') + '/' + currentDates.back.format('YYMMDD'));
+    driver.get('http://' + BASE_URL + '/' + _from + '/' + _to + '/' + currentDates.depart.format('YYMMDD') + '/' + currentDates.back.format('YYMMDD') + '?adults=' + _adults + '&children=' + _children + '&infants=' + _infants);
     driver.wait(until.elementIsNotVisible(driver.findElement(By.id("progress-meter"))), TIMEOUT);
     driver.findElements(By.css("a.mainquote-price")).then(function (prices) {
         // first price only
@@ -43,10 +55,7 @@ function search() {
         });
     });
 
-    driver.call(function () {
-        // next search
-        search();
-    })
+    
 }
 
 
@@ -70,7 +79,9 @@ function FightCalendar(begin, end) {
     }
 
     this.isDone = function () {
-        return this._depart.isSame(_end) && this._return.isSame(_end);
+        isDoneValue = this._depart.isSame(_end) && this._return.isSame(_end);
+        //console.log("isDone: " + isDoneValue + " _depart: "+ this._depart.format('DD/MM/YYYY') + " _end: " + this._end.format('DD/MM/YYYY') + " _return: " + this._return.format('DD/MM/YYYY'));
+        return isDoneValue;
     }
 
     function isInvalidDate(d, r) {

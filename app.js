@@ -37,6 +37,7 @@ function search() {
 
     if (cal.isDone()) {
         // stop searching
+        driver.quit();
         return;
     }
 
