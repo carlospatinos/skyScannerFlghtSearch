@@ -18,6 +18,7 @@ var _trip_max = 30; // inclusive
 var _adults = 2;
 var _children = 1;
 var _infants = 1;
+var bestPrice = 0;
 
 // ----------------------------------
 var By = webdriver.By;
@@ -39,14 +40,22 @@ function search() {
         return;
     }
 
-    var fullURL = 'http://' + BASE_URL + '/' + _from + '/' + _to + '/' + currentDates.depart.format('YYMMDD') + '/' + currentDates.back.format('YYMMDD') + '?adults=' + _adults + '&children=' + _children + '&infants=' + _infants;
+    var fullURL = 'http://' + BASE_URL + '/' + _from + '/' + _to + '/' + currentDates.depart.format('YYMMDD') + '/' + currentDates.back.format('YYMMDD'); // + '?adults=' + _adults + '&children=' + _children + '&infants=' + _infants;
     console.log('fullURL: ' + fullURL);
     driver.get(fullURL);
-    driver.wait(until.elementIsNotVisible(driver.findElement(By.id("progress-meter"))), TIMEOUT);
+    driver.wait(until.elementIsNotVisible(driver.findElement(By.id("progress-meter"))), 100000);
     driver.findElements(By.css("a.mainquote-price")).then(function (prices) {
         // first price only
         prices[0].getText().then(function (price) {
             console.log({depart: currentDates.depart.format('DD/MM/YYYY'), back: currentDates.back.format('DD/MM/YYYY'), price: price});
+            bestPriceTmp=Number(price.replace('€',''));
+            if (bestPriceTmp < bestPrice) {
+                bestPrice = bestPriceTmp;
+                console.log('This is better than before:' + bestPrice + ',' + bestPriceTmp);
+            } else {
+                console.log('This is worst than before:' + bestPrice + ',' + bestPriceTmp);
+            }
+            
         });
     });
 
