@@ -6,9 +6,9 @@ var logger = log4js.getLogger();
 logger.setLevel('TRACE');
 
 var minDepartureDate = moment('2015-12-11'); // inclusive
-var maxReturnDate = moment('2015-12-14'); //moment('2016-01-10'); //inclusive
-var minDuration = 2;
-var maxDuration = 3;
+var maxReturnDate = moment('2016-01-12'); //moment('2016-01-10'); //inclusive
+var minDuration = 21;
+var maxDuration = 31;
 var adults = 2;
 var children = 1;
 var infants = 1;
