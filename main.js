@@ -6,15 +6,16 @@ var logger = log4js.getLogger();
 logger.setLevel('TRACE');
 
 var minDepartureDate = moment('2015-12-11'); // inclusive
-var maxReturnDate = moment('2016-01-10'); //inclusive
-var minDuration = 21;
-var maxDuration = 31;
+var maxReturnDate = moment('2015-12-14'); //moment('2016-01-10'); //inclusive
+var minDuration = 2;
+var maxDuration = 3;
 var adults = 2;
 var children = 1;
 var infants = 1;
 
+
 // 5min * 60s * 1000ms = 300.000ms
-var TIMEOUT = 600000;
+var TIMEOUT = 300000;
 var BASE_URL = 'www.skyscanner.ie/transport/flights';
 
 // ----------------------------------
@@ -32,7 +33,11 @@ function main(from, to, adults, children, infants) {
     listOfSchedules = flightCal.getGeneratedDates();
 
     listOfSchedules.forEach(function(schedule){
-        search(from, to, adults, children, infants, schedule);
+        try{
+            search(from, to, adults, children, infants, schedule);
+        } catch( e ) {
+            console.error("Error searching: " + e);
+        }
     });
 }
 
@@ -41,12 +46,39 @@ function search(from, to, adults, children, infants, schedule) {
     logger.debug(urlToCheck);
     
     driver.get(urlToCheck);
-    driver.wait(until.elementIsNotVisible(driver.findElement(By.id("progress-meter"))), TIMEOUT);
+    driver.findElement(webdriver.By.id('progress-meter')).then(function(webElement) {
+        logger.debug('Element exists');
+        driver.wait(until.elementIsNotVisible(driver.findElement(By.id("progress-meter"))), TIMEOUT);
+    }, function(err) {
+        if (err.state && err.state === 'no such element') {
+            logger.debug('Element not found');
+        } else {
+            webdriver.promise.rejected(err);
+        }
+    });
+
+    //driver.wait(until.elementIsNotVisible(driver.findElement(By.id("progress-meter"))), TIMEOUT);
+    /*driver.wait(function () {
+        until.elementIsNotVisible(driver.findElement(By.id("progress-meter")))
+    }, TIMEOUT);
+
+    driver.wait(until.elementIsNotVisible(
+        driver.findElement(By.id("progress-meter")).then(
+            function(webElement) {
+                console.log('Element exists');
+            }, function(err) {
+                console.log('Element not found' + err);
+            }) ), TIMEOUT);
+    */
     driver.findElements(By.css("a.mainquote-price")).then(function (prices) {
     // first price only
-        prices[0].getText().then(function (price) {
-            logger.info({departureDate: schedule.departureDate.format('DD/MM/YYYY'), returnDate: schedule.returnDate.format('DD/MM/YYYY'), price: price});
-        });
+        if (prices[0] != undefined) {
+            prices[0].getText().then(function (price) {
+                logger.info({numberOfDays: schedule.numberOfDays, departureDate: schedule.departureDate.format('DD/MM/YYYY'), returnDate: schedule.returnDate.format('DD/MM/YYYY'), price: price});
+             });
+        } else {
+            logger.info("No price found for: " + urlToCheck);
+        }
     });
 }
 
@@ -63,7 +95,7 @@ function FlightCalendar(minDepartureDate, maxReturnDate, minDuration, maxDuratio
         if (this.minDepartureDate.isAfter(this.maxReturnDate)) {
             logger.error("Error: minDepartureDate is after maxReturnDate");
         }
-        var superId = 0;
+        var siteId = 0;
         for (var startDateToTest = this.minDepartureDate.clone(); startDateToTest.isBefore(this.maxReturnDate); startDateToTest.add(1, 'days')) {
             for (var numberOfDaysToStay = this.minDuration; numberOfDaysToStay <= this.maxDuration; numberOfDaysToStay++) {
                 var endDateToTest = moment(startDateToTest);
@@ -71,10 +103,10 @@ function FlightCalendar(minDepartureDate, maxReturnDate, minDuration, maxDuratio
                 if (endDateToTest.isAfter(this.maxReturnDate)) {
                     continue;
                 }
-                superId++;
+                siteId++;
                 //logger.debug("numberOfDaysToStay: " + numberOfDaysToStay + " >> From: " + startDateToTest.format('YYYY-MM-DD') + " To: " + endDateToTest.format('YYYY-MM-DD') );
-                logger.debug({departureDate: startDateToTest.format('YYYY-MM-DD'), returnDate: endDateToTest.format('YYYY-MM-DD'), numberOfDays: numberOfDaysToStay});
-                this.generatedDates.push({departureDate: startDateToTest.clone(), returnDate: endDateToTest.clone(), numberOfDays: numberOfDaysToStay, superIdWow: superId});
+                logger.debug({id: siteId, departureDate: startDateToTest.format('YYYY-MM-DD'), returnDate: endDateToTest.format('YYYY-MM-DD'), numberOfDays: numberOfDaysToStay});
+                this.generatedDates.push({departureDate: startDateToTest.clone(), returnDate: endDateToTest.clone(), numberOfDays: numberOfDaysToStay});
             }
         }
         
