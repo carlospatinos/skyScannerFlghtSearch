@@ -1,13 +1,17 @@
 var moment = require('moment');
 var log4js = require('log4js');
 var webdriver = require('selenium-webdriver');
+var proxy = require('selenium-webdriver/proxy');
 var monk = require('monk');
 var db = monk('localhost:27017/collectionFromMongo');
+
 
 
 var logger = log4js.getLogger();
 logger.setLevel('TRACE');
 
+var origin = 'dub'
+var destiny = 'mex' // cun for cancun, mex for mexico
 var minDepartureDate = moment('2015-12-11'); // inclusive
 var maxReturnDate = moment('2016-01-12'); //moment('2016-01-10'); //inclusive
 var minDuration = 21;
@@ -25,13 +29,21 @@ var BASE_URL = 'www.skyscanner.ie/transport/flights';
 // ----------------------------------
 var By = webdriver.By;
 var until = webdriver.until;
-var driver = new webdriver.Builder().forBrowser('firefox').build();
+
+//var profile = new FirefoxProfile();
+//profile.setPreference("network.proxy.http", "localhost");
+//profile.setPreference("network.proxy.http_port", "3128");
+//profile.setPreference("network.proxy.type", 0);
+//var driver = new FirefoxDriver(profile);
+
+//var driver = new webdriver.Builder().forBrowser('firefox').build();
+var driver = new webdriver.Builder().forBrowser('firefox').setProxy(proxy.direct()).build();
 
 
 var flightCal = new FlightCalendar(minDepartureDate, maxReturnDate, minDuration, maxDuration);
 flightCal.generateDates();
 
-main('dub', 'mex', adults, children, infants);
+main(origin, destiny, adults, children, infants);
 
 function main(from, to, adults, children, infants) {
     listOfSchedules = flightCal.getGeneratedDates();
@@ -61,25 +73,12 @@ function search(from, to, adults, children, infants, schedule) {
         }
     });
 
-    //driver.wait(until.elementIsNotVisible(driver.findElement(By.id("progress-meter"))), TIMEOUT);
-    /*driver.wait(function () {
-        until.elementIsNotVisible(driver.findElement(By.id("progress-meter")))
-    }, TIMEOUT);
-
-    driver.wait(until.elementIsNotVisible(
-        driver.findElement(By.id("progress-meter")).then(
-            function(webElement) {
-                console.log('Element exists');
-            }, function(err) {
-                console.log('Element not found' + err);
-            }) ), TIMEOUT);
-    */
     driver.findElements(By.css("a.mainquote-price")).then(function (prices) {
     // first price only
         if (prices[0] != undefined) {
             prices[0].getText().then(function (price) {
                 var now = moment();
-                var result = {numberOfDays: schedule.numberOfDays, departureDate: schedule.departureDate.format('DD/MM/YYYY'), returnDate: schedule.returnDate.format('DD/MM/YYYY'), price: price, url: urlToCheck, executionDate: now.format('DD/MM/YYYY HH:mm')};
+                var result = {numberOfDays: schedule.numberOfDays, departureDate: schedule.departureDate.format('DD/MM/YYYY'), returnDate: schedule.returnDate.format('DD/MM/YYYY'), price: price, url: urlToCheck, executionDate: now.format('DD/MM/YYYY HH:mm'), origin: from, destiny: to};
                 logger.info(schedule.id + " >> " + JSON.stringify(result));
                 var collection = db.get('skyScanner');
                 collection.insert(result);
@@ -115,7 +114,7 @@ function FlightCalendar(minDepartureDate, maxReturnDate, minDuration, maxDuratio
                 siteId++;
                 //logger.debug("numberOfDaysToStay: " + numberOfDaysToStay + " >> From: " + startDateToTest.format('YYYY-MM-DD') + " To: " + endDateToTest.format('YYYY-MM-DD') );
                 var queryData = {id: siteId, departureDate: startDateToTest.format('YYYY-MM-DD'), returnDate: endDateToTest.format('YYYY-MM-DD'), numberOfDays: numberOfDaysToStay}
-                logger.debug(queryData);
+                logger.debug(JSON.stringify(queryData));
                 this.generatedDates.push({id: siteId, departureDate: startDateToTest.clone(), returnDate: endDateToTest.clone(), numberOfDays: numberOfDaysToStay});
             }
         }
@@ -125,5 +124,4 @@ function FlightCalendar(minDepartureDate, maxReturnDate, minDuration, maxDuratio
     this.getGeneratedDates = function()  {
         return this.generatedDates;
     }
-
 }
