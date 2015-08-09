@@ -7,6 +7,7 @@ var async = require("async");
 var db = monk('localhost:27017/collectionFromMongo');
 
 
+
 var logger = log4js.getLogger();
 logger.setLevel('TRACE');
 
@@ -65,7 +66,15 @@ function main(from, to, adults, children, infants) {
 }
 
 function search(from, to, adults, children, infants, schedule, callback) {
-    var urlToCheck = 'http://' + BASE_URL + '/' + from + '/' + to + '/' + schedule.departureDate.format('YYMMDD') + '/' + schedule.returnDate.format('YYMMDD') + '?adults=' + adults + '&children=' + children + '&infants=' + infants;
+    passengerOptions = '?adults=' + adults;
+    if (children > 0) {
+        passengerOptions = passengerOptions + '&children=' + children;
+    }
+    if (infants > 0) {
+        passengerOptions = passengerOptions + '&infants=' + infants;
+    }
+
+    var urlToCheck = 'http://' + BASE_URL + '/' + from + '/' + to + '/' + schedule.departureDate.format('YYMMDD') + '/' + schedule.returnDate.format('YYMMDD') + passengerOptions;
     logger.debug(schedule.id + " >> " + urlToCheck);
     
     driver.get(urlToCheck);
