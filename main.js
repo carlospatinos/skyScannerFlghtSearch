@@ -3,17 +3,17 @@ var log4js = require('log4js');
 var webdriver = require('selenium-webdriver');
 var proxy = require('selenium-webdriver/proxy');
 var monk = require('monk');
+var async = require("async");
 var db = monk('localhost:27017/collectionFromMongo');
-
 
 
 var logger = log4js.getLogger();
 logger.setLevel('TRACE');
 
-var origin = 'dub'
+var origin = 'dub' //dub, shan, ork
 var destiny = 'mex' // cun for cancun, mex for mexico
 var minDepartureDate = moment('2015-12-11'); // inclusive
-var maxReturnDate = moment('2016-01-12'); //moment('2016-01-10'); //inclusive
+var maxReturnDate = moment('2016-01-12'); //moment('2016-01-12'); //inclusive
 var minDuration = 21;
 var maxDuration = 31;
 var adults = 2;
@@ -48,16 +48,23 @@ main(origin, destiny, adults, children, infants);
 function main(from, to, adults, children, infants) {
     listOfSchedules = flightCal.getGeneratedDates();
 
-    listOfSchedules.forEach(function(schedule){
-        try{
-            search(from, to, adults, children, infants, schedule);
-        } catch( e ) {
-            logger.error("Error searching: " + e);
-        }
-    });
+    async.each(listOfSchedules,
+      // 2nd param is the function that each item is passed to
+      function(schedule, callback){
+        // Call an asynchronous function, often a save() to DB
+        search(from, to, adults, children, infants, schedule, callback);
+      },
+      // 3rd param is the function to call when everything's done
+      function(err){
+        // All tasks are done now
+        console.log("All done");
+        driver.quit();
+        process.exit()
+      }
+    );
 }
 
-function search(from, to, adults, children, infants, schedule) {
+function search(from, to, adults, children, infants, schedule, callback) {
     var urlToCheck = 'http://' + BASE_URL + '/' + from + '/' + to + '/' + schedule.departureDate.format('YYMMDD') + '/' + schedule.returnDate.format('YYMMDD') + '?adults=' + adults + '&children=' + children + '&infants=' + infants;
     logger.debug(schedule.id + " >> " + urlToCheck);
     
@@ -67,7 +74,7 @@ function search(from, to, adults, children, infants, schedule) {
         driver.wait(until.elementIsNotVisible(driver.findElement(By.id("progress-meter"))), TIMEOUT);
     }, function(err) {
         if (err.state && err.state === 'no such element') {
-            logger.debug('Element not found');
+            logger.warn('Element not found');
         } else {
             webdriver.promise.rejected(err);
         }
@@ -84,10 +91,13 @@ function search(from, to, adults, children, infants, schedule) {
                 collection.insert(result);
              });
         } else {
-            logger.info("No price found for: " + urlToCheck);
+            logger.warn("No price found for: " + urlToCheck);
         }
+        callback();
     });
-    //driver.quit();
+
+    
+    
 }
 
 function FlightCalendar(minDepartureDate, maxReturnDate, minDuration, maxDuration) {
