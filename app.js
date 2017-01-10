@@ -13,13 +13,13 @@ logger.setLevel('TRACE');
 
 var origin = 'dub' //dub, shan, ork
 var destiny = 'mex' // cun for cancun, mex for mexico
-var minDepartureDate = moment('2017-06-01'); // inclusive
-var maxReturnDate = moment('2017-07-20'); //moment('2016-01-12'); //inclusive
+var minDepartureDate = moment('2017-07-01'); // inclusive
+var maxReturnDate = moment('2017-08-31'); //moment('2016-01-12'); //inclusive
 var minDuration = 21;
-var maxDuration = 31;
+var maxDuration = 41;
 var adults = 2;
-var children = 1;
-var infants = 1;
+var children = 2;
+var infants = 0;
 
 
 // 5min * 60s * 1000ms = 300.000ms
