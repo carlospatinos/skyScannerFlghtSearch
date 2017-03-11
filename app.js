@@ -4,7 +4,8 @@ var webdriver = require('selenium-webdriver');
 var proxy = require('selenium-webdriver/proxy');
 var monk = require('monk');
 var async = require("async");
-var db = monk('mongodb://maiz:maiz@ds119588.mlab.com:19588/maiz');
+var FirefoxProfile = require('firefox-profile');
+var db = monk('mongodb://mexico:mexico@ds129030.mlab.com:29030/mexico');
 
 
 
@@ -12,11 +13,11 @@ var logger = log4js.getLogger();
 logger.setLevel('TRACE');
 
 var origin = 'dub' //dub, shan, ork
-var destiny = 'mex' // cun for cancun, mex for mexico
+var destiny = 'cun' // cun for cancun, mex for mexico
 var minDepartureDate = moment('2017-07-01'); // inclusive
-var maxReturnDate = moment('2017-08-31'); //moment('2016-01-12'); //inclusive
-var minDuration = 21;
-var maxDuration = 41;
+var maxReturnDate = moment('2017-07-05'); //moment('2016-01-12'); //inclusive
+var minDuration = 1;
+var maxDuration = 3;
 var adults = 2;
 var children = 2;
 var infants = 0;
@@ -37,8 +38,8 @@ var until = webdriver.until;
 //profile.setPreference("network.proxy.type", 0);
 //var driver = new FirefoxDriver(profile);
 
-//var driver = new webdriver.Builder().forBrowser('firefox').build();
-var driver = new webdriver.Builder().forBrowser('firefox').setProxy(proxy.direct()).build();
+var driver = new webdriver.Builder().forBrowser('chrome').build();
+//var driver = new webdriver.Builder().forBrowser('firefox').setProxy(proxy.direct()).build();
 
 
 var flightCal = new FlightCalendar(minDepartureDate, maxReturnDate, minDuration, maxDuration);
@@ -74,13 +75,15 @@ function search(from, to, adults, children, infants, schedule, callback) {
         passengerOptions = passengerOptions + '&infants=' + infants;
     }
 
-    var urlToCheck = 'http://' + BASE_URL + '/' + from + '/' + to + '/' + schedule.departureDate.format('YYMMDD') + '/' + schedule.returnDate.format('YYMMDD') + passengerOptions;
+    var urlToCheck = 'https://' + BASE_URL + '/' + from + '/' + to + '/' + schedule.departureDate.format('YYMMDD') + '/' + schedule.returnDate.format('YYMMDD') + passengerOptions + "#results";
     logger.debug(schedule.id + " >> " + urlToCheck);
     
+    var objectToWait='progress-meter';
+    var objectToWait='day-searching';
     driver.get(urlToCheck);
-    driver.findElement(webdriver.By.id('progress-meter')).then(function(webElement) {
-        logger.debug('Element exists');
-        driver.wait(until.elementIsNotVisible(driver.findElement(By.id("progress-meter"))), TIMEOUT);
+    driver.findElement(webdriver.By.id(objectToWait)).then(function(webElement) {
+        logger.debug('Element ' + objectToWait + ' exists');
+        driver.wait(until.elementIsNotVisible(driver.findElement(By.id(objectToWait))), TIMEOUT);
     }, function(err) {
         if (err.state && err.state === 'no such element') {
             logger.warn('Element not found');
@@ -89,7 +92,9 @@ function search(from, to, adults, children, infants, schedule, callback) {
         }
     });
 
+    // a.mainquote-price:not(.mq-group)
     driver.findElements(By.css("a.mainquote-price")).then(function (prices) {
+        console.log("prices: " + prices);
     // first price only
         if (prices[0] != undefined) {
             prices[0].getText().then(function (price) {
@@ -100,13 +105,10 @@ function search(from, to, adults, children, infants, schedule, callback) {
                 collection.insert(result);
              });
         } else {
-            logger.warn("No price found for: " + urlToCheck);
+            logger.warn("No prices found for: " + urlToCheck);
         }
         callback();
     });
-
-    
-    
 }
 
 function FlightCalendar(minDepartureDate, maxReturnDate, minDuration, maxDuration) {

@@ -1,2 +1,2 @@
 # skyScannerFlghtSearch
-A script using selenium to seach beast fligh. Combining different dates.
+A script using selenium to seach best fligh. Combining different dates.
