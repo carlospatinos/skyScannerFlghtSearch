@@ -4,8 +4,10 @@ var webdriver = require('selenium-webdriver');
 var proxy = require('selenium-webdriver/proxy');
 var monk = require('monk');
 var async = require("async");
+require('dotenv').config()
+
 var FirefoxProfile = require('firefox-profile');
-var db = monk('mongodb://mexico:mexico@ds129030.mlab.com:29030/mexico');
+var db = monk(process.env.MONGO_URL);
 
 
 
@@ -14,8 +16,8 @@ logger.setLevel('TRACE');
 
 var origin = 'dub' //dub, shan, ork
 var destiny = 'cun' // cun for cancun, mex for mexico
-var minDepartureDate = moment('2017-07-01'); // inclusive
-var maxReturnDate = moment('2017-07-05'); //moment('2016-01-12'); //inclusive
+var minDepartureDate = moment('2021-07-01'); // inclusive
+var maxReturnDate = moment('2021-07-05'); //moment('2016-01-12'); //inclusive
 var minDuration = 1;
 var maxDuration = 3;
 var adults = 2;
